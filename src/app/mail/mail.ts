@@ -687,7 +687,7 @@ export class Mail implements OnInit {
     // Use the stored filename if available, otherwise fall back to ID
     if (attachment.fileName || attachment.id) {
       // Construct download URL using the backend endpoint
-      const downloadUrl = `http://localhost:8080/api/mail/attachments/id/${attachment.id}`;
+      const downloadUrl = `https://mailbackend-production-b0cd.up.railway.app/api/mail/attachments/id/${attachment.id}`;
       
       // Open in new tab - backend will handle inline display or download based on content type
       window.open(downloadUrl, '_blank');
