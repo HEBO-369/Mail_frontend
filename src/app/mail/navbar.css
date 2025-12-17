@@ -1,0 +1,88 @@
+/* Navbar styling */
+.navbar {
+    caret-color: transparent;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 80px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;  /* space between title and profile */
+    padding: 0 20px;
+
+    background-color: #f0f2f6;
+    z-index: 1000;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Title */
+.navbar .title {
+    font-size: 28px;
+    font-weight: bold;
+    color: #202124;
+}
+
+/* Searchbar */
+.navbar .searchbar {
+    height: 50px;
+    display: flex;
+    align-items: center;
+    flex: 1; 
+    justify-content: space-between;                     /* grow to fill space */
+    max-width: 500px;             /* prevent it from getting too wide */
+    min-width: 200px;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 24px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.navbar .searchbar input[type="text"] {
+    width: 180%;
+    flex: 1;                       /* take remaining space */
+    border: none;
+    outline: none;
+    padding: 8px 12px;
+    font-size: 16px;
+    border-radius: 20px;
+    caret-color: black;
+    background-color: transparent;
+
+    margin-left: 10px;
+}
+
+.navbar .searchbar .filter {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+
+    margin-right: 15px;
+}
+
+.navbar .searchbar .filter:hover {
+    background-color: rgb(213, 213, 213);
+}
+
+/* Profile button */
+.dropdown-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    cursor: pointer;
+    background-image: url(Guest-user.png);
+    background-size: cover;
+    background-position: center;
+    border: 2px solid #ccc;
+    flex-shrink: 0;  /* prevent shrinking in flex layout */
+
+    position: relative;
+    right: 40px;
+}

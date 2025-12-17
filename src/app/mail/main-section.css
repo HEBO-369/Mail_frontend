@@ -1,0 +1,139 @@
+.sent-mails {
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    position: absolute;
+    top: 80px;
+    left: 260px;
+    right: 16px;
+    bottom: 16px;
+
+    display: flex;
+    flex-direction: column;
+
+    background-color: #fdfdfd; /* very subtle off-white */
+    border-radius: 18px;
+    padding: 20px;
+
+    box-sizing: border-box;
+    overflow: hidden;
+
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07); /* softer, floating effect */
+}
+
+/* FILTER + SELECT BARS */
+.sent-mails > .filterbar,
+.sent-mails > .selectbar {
+    flex-shrink: 0;
+}
+
+/* MAIL LIST */
+.mail-list {
+    width: 100%;
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* more breathing space */
+    overflow-y: auto; /* scroll if too many mails */
+    padding-right: 4px; /* prevent scrollbar overlap */
+}
+
+/* Single mail row */
+.one-mail {
+    display: flex;
+    /* Checkbox | Sender | Subject | Timestamp */
+    flex-direction: row;
+    align-items: center;
+
+    padding: 10px 14px;
+    min-height: 54px;
+
+    background-color: #ffffff;
+    border-radius: 14px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.one-mail:hover {
+    background-color: #eef3fc; /* very soft blue */
+    border-color: #d0d7eb;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+/* Sender */
+.one-mail > div:first-child {
+    font-weight: 600;
+    color: #111827; /* dark slate */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Subject */
+.one-mail > div:nth-child(2) {
+    color: #4b5563; /* slate gray */
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Timestamp */
+.one-mail > div:last-child {
+    color: #6b7280; /* slightly lighter gray */
+    font-size: 13px;
+    font-weight: 400;
+    text-align: right;
+    white-space: nowrap;
+}
+.one-mail.selected {
+    background-color: #c2dbff !important;
+    border-color: #3b82f6;
+}
+.mail-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mail-read-toggle {
+    border-radius: 50%;
+    padding: 5px;
+    margin: 2px;
+    color: #5f6368;
+    transition: all 0.2s ease;
+}
+
+.mail-read-toggle:hover {
+    background-color: #e8eaed;
+    color: #1a73e8;
+}
+
+.mail-trash{
+    border-radius: 50%;
+    padding: 5px;
+    margin: 2px;
+}
+
+.mail-trash:hover{
+    background-color: #cfd3db;
+}
+
+.one-mail-div{
+    width: 100%;
+    display: grid;
+    /* Checkbox | Sender | Subject | Timestamp */
+    grid-template-columns: 40px 3fr 5fr 1fr;
+    align-items: center;
+
+    padding: 14px 18px;
+    min-height: 54px;
+
+    background-color: transparent;
+    border-radius: 14px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}

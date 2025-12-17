@@ -1,0 +1,85 @@
+/* Dropdown container */
+.dropdown-menu {
+    position: fixed;       /* sticky under navbar */
+    top: 90px;
+    right: 20px;           /* aligned with dropdown button */
+
+    width: 280px;
+    padding: 20px;
+
+    background-color: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+
+    z-index: 999;          /* above content */
+}
+
+/* Profile image */
+.profile-image {
+    width: 150px;
+    height: 150px;
+
+    border-radius: 50%;
+    border: 2px solid gray;
+
+    background-image: url(Guest-user.png);
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+/* Buttons container */
+.dropdown-menu .buttons {
+    display: flex;
+    gap: 10px;
+    flex-direction: row;
+}
+
+/* Individual buttons */
+.dropdown-menu .buttons button {
+    flex: 1;
+    padding: 12px 0;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.add-account {
+    background-color: #4CAF50;
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+}
+
+.add-account:hover {
+    background-color: #45a049;
+}
+
+.sign-out {
+    background-color: #f44336;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+}
+
+.sign-out:hover {
+    background-color: #da190b;
+}
+
+.user-email {
+    font-family: 'Arial', sans-serif;  /* change font */
+    font-size: 16px;                    /* optional: adjust size */
+    font-weight: bold;                  /* optional: make bold */
+    color: #333;                        /* optional: change color */
+}
+
+.user-name {
+    font-family: 'Verdana', sans-serif; /* different font if desired */
+    font-size: 18px;
+    font-weight: normal;
+    color: #555;
+}

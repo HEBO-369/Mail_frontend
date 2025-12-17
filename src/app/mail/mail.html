@@ -1,0 +1,639 @@
+
+    <div class="mail">
+      <div class="navbar">
+        <div class="title">MansyMail</div>
+
+        <div class="searchbar" style="position: relative;">
+
+          <div class="search">
+            <input type="text" [(ngModel)]="searchQuery" (keydown.enter)="generalSearch()"
+                   [placeholder]="'Search by ' + searchMethod() + '...'">
+          </div>
+
+          <div class="filter" (click)="toggleFilterMenu()" style="cursor: pointer;" title="Filter Options">
+            <img src="icons/filter.svg" alt="filter">
+          </div>
+
+            @if(isFilterMenuOpen()) {
+                <div class="filter-dropdown">
+
+                    <div class="filter-item">
+                        <label for="from-input">From</label>
+                        <input id="from-input" type="text" placeholder="Sender email" [(ngModel)]="searchFrom">
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="to-input">To</label>
+                        <input id="to-input" type="text" placeholder="Recipient email" [(ngModel)]="searchTo">
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="subject-input">Subject</label>
+                        <input id="subject-input" type="text" placeholder="Email subject" [(ngModel)]="searchSubject">
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="words-input">Has the words</label>
+                        <input id="words-input" type="text" placeholder="Search in content" [(ngModel)]="searchWords">
+                    </div>
+
+                    <div class="Date">
+                        <label for="date-select">Date within</label>
+                        <select id="date-select" name="date">
+                            <option [value]="dateRange">1 day</option>
+                            <option [value]="dateRange">3 days</option>
+                            <option [value]="dateRange">1 week</option>
+                            <option [value]="dateRange">2 weeks</option>
+                            <option [value]="dateRange">1 month</option>
+                            <option [value]="dateRange">2 months</option>
+                            <option [value]="dateRange">6 months</option>
+                            <option [value]="dateRange">1 year</option>
+                        </select>
+                        <input type="datetime-local" [(ngModel)]="exactDate">
+                    </div>
+
+                    <!-- Search and Move Section -->
+                    <div class="filter-item">
+                        <label for="search-label">Search</label>
+                        <div class="mail-icons">
+                            <select class="move-select">
+                                <option [value]="searchFolder">All Mail</option>
+                                @for(folder of targetFolders(); track folder) {
+                                    <option [value]="searchFolder">{{ folder }}</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Checkbox Section -->
+                    <div class="filter-checkbox">
+                        <input type="checkbox" id="attachments-checkbox" name="attachments" [(ngModel)]="hasAttachment">
+                        <label for="attachments-checkbox">Has Attachments</label>
+
+                        <input type="checkbox" id="read-checkbox" name="isRead" [(ngModel)]="isRead">
+                        <label for="read-checkbox">Is Read</label>
+                    </div>
+
+                    <button (click)="onSearch()">Search</button>
+                </div>
+            }
+        </div>
+
+        <!-- Contacts Button -->
+        <button (click)="openContactsModal()"
+                style="background: #1a73e8; color: white; border: none; border-radius: 4px; padding: 8px 16px; cursor: pointer; font-size: 14px; font-weight: 500; margin-right: 10px; transition: background 0.3s;"
+                onmouseover="this.style.background='#1557b0'" onmouseout="this.style.background='#1a73e8'"
+                title="Manage Contacts">
+          👥 Contacts
+        </button>
+
+        <div class="dropdown-btn" id="dropdownBtn" (click)="toggleProfileDropdown()"></div>
+
+      </div>
+
+      <div class="dropdown">
+        <div [style.display]="isProfileDropdownOpen? 'block': 'none'">
+
+          <div class="dropdown-menu" id="dropdownMenu">
+            <div class="user-email">{{currentUser()?.email}}</div>
+            <div class="profile-image"></div>
+            <div class="user-name">Hello, {{currentUser()?.name}}</div>
+            <div class="buttons">
+              <button class="add-account" (click)="addAccount()">Add Account</button>
+              <button class="sign-out" (click)="signOut()">Sign Out</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <button class="composeBtn" (click)="compseToggle()">Compose</button>
+        <ul class="features">
+            <li (click)="loadInbox()" [class.active]="currentFolder() === 'inbox'">Inbox</li>
+            <li (click)="loadFolder('starred')" [class.active]="currentFolder() === 'starred'">Starred</li>
+            <li (click)="loadSent()" [class.active]="currentFolder() === 'sent'">Sent</li>
+            <li (click)="loadDrafts()" [class.active]="currentFolder() === 'drafts'">Drafts</li>
+            <li (click)="loadFolder('important')" [class.active]="currentFolder() === 'important'">Important</li>
+            <li (click)="loadFolder('scheduled')" [class.active]="currentFolder() === 'scheduled'">Scheduled</li>
+            <li (click)="loadFolder('all')" [class.active]="currentFolder() === 'all'">All Mail</li>
+            <li (click)="loadFolder('spam')" [class.active]="currentFolder() === 'spam'">Spam</li>
+            <li (click)="loadFolder('trash')" [class.active]="currentFolder() === 'trash'">Trash</li>
+            <hr style="border: 0; border-top: 1px solid #ccc; margin: 15px 0;">
+            <div
+                style= "display: flex; justify-content: space-between; padding: 0 10px; margin-bottom: 8px; color: #5f6368; font-weight: bold; font-size: 14px;">
+                <span>MY FOLDERS</span>
+                <span (click)="addUserFolder()"
+                    style="cursor: pointer; font-size: 18px; width: 20px; text-align: center;"
+                    title="Add Folder">+</span>
+            </div>
+            @for(folder of userFolders(); track folder) {
+            <li (click)="loadFolder(folder)" [class.active]="currentFolder() === folder"
+                style="display: flex; justify-content: space-between; align-items: center;">
+
+              <span style="flex: 1; overflow: hidden; text-overflow: ellipsis;">{{ folder | titlecase }}</span>
+
+              <div style="display: flex; gap: 5px;">
+                    <span (click)="renameUserFolder($event, folder)" title="Rename"
+                          style="font-size: 14px; color: #888; padding: 2px 5px; cursor: pointer; border-radius: 4px;">
+                        ✎
+                    </span>
+
+                <span (click)="deleteUserFolder($event, folder)" title="Delete"
+                      style="font-size: 16px; color: #888; padding: 2px 5px; cursor: pointer; border-radius: 4px; font-weight: bold;">
+                        ×
+                    </span>
+              </div>
+            </li>
+          }
+        </ul>
+      </div>
+
+      <div class="compose-section" [style.display]="isComposing? 'flex':'none'">
+        <div class="compose-title">Compose Email
+          <div class="compose-trash" (click)="saveDraftAndClose()" title="Save as draft and close">
+            <img src="icons/quit.svg" alt="close">
+          </div>
+        </div>
+        <div class="to-input" (click)="onComposeAreaClick($event)">
+          <p>To:</p>
+          <input id="compose-to-input" type="text"
+                 [ngModel]="composedMail.receivers[0]"
+                 (input)="onReceiverInput($event)"
+                 (keydown)="onReceiverKeyDown($event)"
+                 placeholder="Type recipient email...">
+          <!-- Debug Info -->
+          <small style="color: #666; font-size: 11px;">
+            Suggestions: {{ filteredContactSuggestions().length }} | Contacts: {{ contacts().length }}
+          </small>
+        </div>
+
+        <!-- Autocomplete Suggestions Dropdown -->
+        @if(filteredContactSuggestions().length > 0) {
+          <div style="position: relative; margin-top: -8px; margin-left: 20px; margin-right: 20px; z-index: 9999;">
+            <ul class="suggestions-list"
+              style="position: absolute; top: 0; left: 0; right: 0; background: white; border: 1px solid #dadce0; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 9999; max-height: 200px; overflow-y: auto; margin: 0; padding: 0; list-style: none;">
+              @for(suggestion of filteredContactSuggestions(); track suggestion.email; let i = $index) {
+                <li (click)="selectContactEmail(suggestion.email)"
+                    [style.background]="activeSuggestionIndex() === i ? '#f1f3f4' : 'white'"
+                    style="padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;">
+                  <div style="font-weight: 500; font-size: 14px; color: #202124;">
+                    {{ suggestion.name }}
+                  </div>
+                  <div style="font-size: 13px; color: #5f6368;">
+                    {{ suggestion.email }}
+                  </div>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        <div class="subject-input">
+          <p>Subject:</p>
+          <input type="text" [(ngModel)]="composedMail.subject" (click)="printSuggestions()">
+        </div>
+        <textarea class="compose-text-area" [(ngModel)]="composedMail.body"></textarea>
+
+        @if(selectedAttachments().length > 0) {
+          <div
+            style="padding: 10px 20px; background: #f8f9fa; border-top: 1px solid #dadce0; border-bottom: 1px solid #dadce0; max-height: 120px; overflow-y: auto;">
+            <div style="font-size: 12px; color: #5f6368; margin-bottom: 8px; font-weight: 500;">
+              Attachments ({{ selectedAttachments().length }}):
+            </div>
+            @for(file of selectedAttachments(); track $index) {
+              <div
+                style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: white; border: 1px solid #dadce0; border-radius: 4px; margin-bottom: 6px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex: 1; overflow: hidden;">
+                  <span style="font-size: 16px;">📎</span>
+                  <div style="flex: 1; overflow: hidden;">
+                    <div
+                      style="font-size: 13px; color: #202124; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      {{ file.name }}
+                    </div>
+                    <div style="font-size: 11px; color: #5f6368;">
+                      {{ (file.size / 1024).toFixed(1) }} KB
+                    </div>
+                  </div>
+                </div>
+                <button (click)="removeAttachment($index)"
+                        style="background: none; border: none; cursor: pointer; color: #5f6368; font-size: 18px; padding: 4px 8px; line-height: 1;"
+                        title="Remove attachment">
+                  ×
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Hidden File Input -->
+        <input #fileInput type="file" multiple (change)="onFileSelected($event)" style="display: none;">
+
+        <div class="bottom-bar">
+          <button class="compose-send" (click)="sendComposedMail()">Send</button>
+          <button (click)="saveDraft()" style="margin-left: 10px; background: white; border: 1px solid #dadce0; color: #5f6368; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 500;">
+            Save Draft
+          </button>
+          <div class="compose-attachments" (click)="fileInput.click()" style="cursor: pointer;" title="Attach files">
+            <img src="icons/attach.svg" alt="attach">
+          </div>
+          <div class="compose-trash">
+            <img src="icons/trash.svg" alt="attach">
+          </div>
+        </div>
+      </div>
+
+      <div class="sent-mails">
+
+        @if(selectedMail() !== null){
+          <div class="mail-preview">
+            <div class="utility-bar">
+              <div class="utility-left">
+                <div class="return-to-list" (click)="clearselectedMail()">
+                  <img src="icons/returnarrow.svg" alt="">
+                </div>
+
+                <div class="trash-mail">
+                  <img src="icons/trash.svg" alt="">
+                </div>
+              </div>
+
+              <div class="utility-right">
+                <div class="page-display">
+                  {{pageFrom()}}-{{pageTo()}} of {{mails().length}}
+                </div>
+                <button class="page-left" (click)="pagingLeft()">
+                  <img src="icons/arrowback.svg" alt="Page Left">
+                </button>
+                <button class="page-right" (click)="pagingRight()">
+                  <img src="icons/arrowforward.svg" alt="Page Right">
+                </button>
+              </div>
+
+            </div>
+
+            <div class="mail-subject">
+              {{selectedMail()?.subject}}
+            </div>
+            <div class="mail-content">
+              <div class="mail-body">
+                {{selectedMail()?.body}}
+              </div>
+
+              @if(selectedMail()?.attachments?.length) {
+                <div class="mail-attachments" style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee;">
+                  <div style="font-weight: bold; font-size: 13px; color: #555; margin-bottom: 8px;">
+                    📎 Attachments ({{selectedMail()?.attachments?.length}})
+                  </div>
+                  <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    @for(att of selectedMail()?.attachments; track $index) {
+                      <div
+                        style="background: #f1f3f4; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 8px; border: 1px solid #dadce0;">
+                        <span style="font-size: 14px; color: #173db0;">{{ att.fileName }}</span>
+                        <a href="#" (click)="$event.preventDefault(); downloadAttachment(att)" title="Download"
+                          style="text-decoration: none; color: #1a73e8; font-weight: bold; cursor: pointer;">⬇</a>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+
+            <div class="mail-reply">
+              <button class="replyBtn">Reply</button>
+            </div>
+          </div>
+        }
+        @else{
+          <div class="filterbar">
+            <!-- Priority Mode Toggle Button -->
+            <button class="button-filter" (click)="togglePriorityMode()"
+                    [style.background-color]="isPriorityMode() ? '#1a73e8' : '#f1f3f4'"
+                    [style.color]="isPriorityMode() ? '#ffffff' : '#5f6368'"
+                    [style.font-weight]="isPriorityMode() ? 'bold' : 'normal'"
+                    style="cursor: pointer; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 4px; transition: all 0.3s;">
+              {{ isPriorityMode() ? '⭐ Priority View' : '📧 Default View' }}
+            </button>
+
+        </div>
+
+          <div class="selectbar">
+            <div class="left-selector">
+              <div class="selector">
+                <button class="selctorBtn" (click)="toggleSelectAll()"
+                        style="display: flex; align-items: center; justify-content: center;">
+                  <input type="checkbox" [checked]="isAllVisibleSelected()"
+                         style="cursor: pointer; width: 18px; height: 18px; pointer-events: none;">
+                </button>
+                <div class="selectorDropDown">
+                  <img src="icons/dropdown.svg" alt="More select options">
+                </div>
+              </div>
+              @if(selectedIds().size > 0) {
+                <div class="mail-icons" (click)="deleteSelectedMails()" title="Delete Selected"
+                     style="cursor: pointer;">
+                  <img src="icons/trash.svg" alt="Delete" style="width: 20px; height: 20px;">
+                </div>
+              }
+              @if(selectedIds().size > 0) {
+                <div class="mail-icons" style="margin-left: 10px; width: auto; border-radius: 4px;">
+                  <select (change)="moveSelectedMails($event)" class="move-select">
+                    <option value="" disabled selected>Move to...</option>
+                    @for(folder of targetFolders(); track folder) {
+                      <option [value]="folder">{{ folder | titlecase }}</option>
+                    }
+                  </select>
+                </div>
+              }
+
+              <div class="mail-icons">
+                <img src="icons/refresh.svg" (click)="refresh()" style="cursor: pointer;" alt="Refresh">
+              </div>
+
+              <div class="mail-icons">
+                <img src="icons/more.svg" alt="More Options">
+              </div>
+            </div>
+
+            <div class="right-selector">
+              @if(currentFolder() == 'inbox'){
+                <img class="sort-btn" src="icons/srtdesasc.svg" alt="sort" (click)="toggleSortOrder()">
+              }
+              
+              <div class="page-display" (click)="showSortMenu()">
+                  {{pageFrom()}}-{{pageTo()}} of {{mails().length}}
+                </div>
+                
+                <div class="sort-menu" [style.display]="sortMenu()? 'block': 'none'"
+                style="background-color: #e2dcdc;">
+                  <div class="main-item" style="background-color: #bdbaba;">Sort by:</div>
+
+                  <div class="sort-item" (click)="setSortCriteria('sender')">Sender</div>
+                  <div class="sort-item" (click)="setSortCriteria('subject')">Subject</div>
+                  <div class="sort-item" (click)="setSortCriteria('date')">Date</div>
+                  <div class="sort-item" (click)="setSortCriteria('priority')">Priority</div>
+                </div>
+              <button class="page-left" (click)="pagingLeft()">
+                <img src="icons/arrowback.svg" alt="Page Left">
+              </button>
+              <button class="page-right" (click)="pagingRight()">
+                <img src="icons/arrowforward.svg" alt="Page Right">
+              </button>
+            </div>
+
+          </div>
+
+          <div class="mail-list">
+            <!-- Loading state -->
+            @if(isLoading()){
+              <div style="padding: 20px; text-align: center;">
+                Loading emails...
+              </div>
+            }
+
+            <!-- Error state -->
+            @if(errorMessage()){
+              <div style="padding: 20px; text-align: center; color: red;">
+                {{ errorMessage() }}
+              </div>
+            }
+
+
+            <!-- Empty state -->
+            @if(!isLoading() && !errorMessage() && mails().length === 0){
+              <div style="padding: 20px; text-align: center; color: #999;">
+                No emails found in {{ currentFolder() }}
+              </div>
+            }
+
+            <!-- Email list -->
+            @for(i of generatePage(); track i){
+
+              @if(mails()[i]){
+                <div class="one-mail" [class.selected]="selectedIds().has(mails()[i].id)"
+                     [style.background-color]="selectedIds().has(mails()[i].id) ? '#c2dbff' : (mails()[i].isRead ? '#f5f7fa' : '#ffffff')"
+                     (click)="currentFolder() === 'drafts' ? openDraftInCompose(mails()[i]) : setselectedMail(mails()[i])"
+                     [style.cursor]="currentFolder() === 'drafts' ? 'pointer' : 'default'"
+                     [title]="currentFolder() === 'drafts' ? 'Click to edit and send' : ''">
+
+                    <div class="one-mail-div" (click)="currentFolder() === 'drafts' ? openDraftInCompose(mails()[i]) : setselectedMail(mails()[i])">
+    
+    <div class="mail-checkbox" (click)="toggleSelection($event, mails()[i].id)">
+    <input type="checkbox" [checked]="isSelected(mails()[i].id)"
+            style="cursor: pointer; width: 18px; height: 18px;">
+    </div>
+
+    @if(!mails()[i].isRead) {
+    <span
+        style="display: inline-block; width: 8px; height: 8px; background-color: #1a73e8; border-radius: 50%; margin-right: 4px;"
+        title="Unread"></span>
+    }
+
+    <div [style.font-weight]="mails()[i].isRead ? '400' : '600'">
+        @if(currentFolder() == "sent"){
+            To: {{mails()[i].receiver}}
+        }
+        @else {
+            {{mails()[i].sender}}
+        }
+    </div>
+</div>
+                        
+
+                        <div style="display: flex; align-items: center; gap: 6px;" [style.font-weight]="mails()[i].isRead ? '400' : '600'">
+                        <!-- High Priority Indicator (Red Dot for priority = 1) -->
+                          @if(mails()[i].priority === 5) {
+                            <span
+                              style="display: inline-block; width: 8px; height: 8px; background-color: #d93025; border-radius: 50%;"
+                              title="High Priority"></span>
+                          }
+                          {{mails()[i].subject}}
+                        </div>
+
+                        <div [style.font-weight]="mails()[i].isRead ? '400' : '600'">{{mails()[i].timestamp | date:'dd-MM-yy h:mm a'}}
+                      </div>
+
+                      <!-- Mark as read/unread button -->
+
+                      <div
+                        class="mail-read-toggle"
+                        (click)="toggleReadStatus($event, mails()[i])"
+                        [title]="mails()[i].isRead ? 'Mark as unread' : 'Mark as read'"
+                        style="cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center;">
+                        @if(mails()[i].isRead) {
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <line x1="3" y1="3" x2="21" y2="21" stroke-width="2"></line>
+                          </svg>
+                        } @else {
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
+                        }
+                      </div>
+                  <div>{{mails()[i].sender}}</div>
+
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <!-- High Priority Indicator (Red Dot for priority = 1) -->
+                    @if(mails()[i].priority === 1) {
+                      <span
+                        style="display: inline-block; width: 8px; height: 8px; background-color: #d93025; border-radius: 50%;"
+                        title="High Priority"></span>
+                    }
+                    {{mails()[i].subject}}
+                  </div>
+
+                  <div>{{mails()[i].timestamp | date:'dd-MM-yy h:mm a'}}</div>
+                </div>
+              }
+            }
+          </div>
+        }
+
+        <!-- Contacts Management Modal -->
+        @if(isContactsModalOpen()) {
+          <div
+            style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 3000; display: flex; align-items: center; justify-content: center;">
+            <div
+              style="background: white; border-radius: 8px; width: 90%; max-width: 700px; max-height: 90vh; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); display: flex; flex-direction: column;">
+
+              <!-- Modal Header -->
+              <div
+                style="padding: 20px; background: #1a73e8; color: white; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 500;">👥 Manage Contacts</h2>
+                <button (click)="closeContactsModal()"
+                        style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 24px; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; line-height: 1;"
+                        title="Close">
+                  ×
+                </button>
+              </div>
+
+              <!-- Modal Body -->
+              <div
+                style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px;">
+
+                <!-- Search Contacts -->
+                <div>
+                  <input type="text" [(ngModel)]="contactSearchQuery"
+                         placeholder="🔍 Search contacts by name or email..."
+                         style="width: 100%; padding: 10px 15px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                </div>
+
+                <!-- Contacts List -->
+                <div style="border: 1px solid #dadce0; border-radius: 8px; overflow-y: scroll;">
+                  <div
+                    style="display: flex; justify-content: space-between; background: #f5f5f5; padding: 12px 15px; font-weight: 600; font-size: 14px; color: #5f6368; border-bottom: 1px solid #dadce0;">
+                    Contacts ({{ filteredContacts().length }})
+
+                    <img src="icons/srtdesasc.svg" alt="Sort by:" class="sort-btn" (click)="sortContacts()">
+                  </div>
+
+                  @if(filteredContacts().length === 0) {
+                    <div style="padding: 40px; text-align: center; color: #5f6368;">
+                      @if(contactSearchQuery()) {
+                        <div>No contacts match your search.</div>
+                      } @else {
+                        <div>No contacts yet. Add your first contact below!</div>
+                      }
+                    </div>
+                  } @else {
+                    <div style="max-height: 250px; overflow-y: scroll; overflow-x: hidden;">
+                      @for(contact of filteredContacts(); track contact.id) {
+                        <div style="padding: 15px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: start; transition: background 0.2s;"
+                             [style.background]="editingContact()?.id === contact.id ? '#e8f0fe' : 'white'">
+
+                          <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 500; font-size: 15px; color: #202124; margin-bottom: 4px;">
+                              {{ contact.name }}
+                            </div>
+                            <div style="font-size: 13px; color: #5f6368;">
+                              @for(email of contact.emails; track email; let isLast = $last) {
+                                <span>{{ email }}{{ isLast ? '' : ', ' }}</span>
+                              }
+                            </div>
+                          </div>
+
+                          <div style="display: flex; gap: 8px; margin-left: 10px;">
+                            <button (click)="startEditContact(contact)"
+                                    style="background: #1a73e8; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; white-space: nowrap;"
+                                    title="Edit contact">
+                              ✏️ Edit
+                            </button>
+                            <button (click)="deleteContactById(contact.id)"
+                                    style="background: #d93025; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px;"
+                                    title="Delete contact">
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <!-- Add/Edit Contact Form -->
+                <div style="border: 1px solid #dadce0; border-radius: 8px; padding: 20px; background: #f8f9fa;">
+                  <h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: 500; color: #202124;">
+                    {{ editingContact() ? '✏️ Edit Contact' : '➕ Add New Contact' }}
+                  </h3>
+
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <!-- Name Input -->
+                    <div>
+                      <label
+                        style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px; font-weight: 500;">
+                        Name *
+                      </label>
+                      <input type="text" [(ngModel)]="contactFormName" placeholder="Enter contact name"
+                             style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                    </div>
+
+                    <!-- Emails Input -->
+                    <div>
+                      <label
+                        style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px; font-weight: 500;">
+                        Email Addresses * (comma-separated for multiple)
+                      </label>
+                      <input type="text" [(ngModel)]="contactFormEmails"
+                             placeholder="e.g., john@example.com, john.doe@work.com"
+                             style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                      <div style="font-size: 12px; color: #5f6368; margin-top: 4px;">
+                        💡 Tip: Separate multiple emails with commas
+                      </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 10px; margin-top: 8px;">
+                      <button (click)="saveContact()"
+                              style="flex: 1; background: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                        {{ editingContact() ? '✅ Update Contact' : '➕ Add Contact' }}
+                      </button>
+
+                      @if(editingContact()) {
+                        <button (click)="cancelEditContact()"
+                                style="background: #5f6368; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                          ❌ Cancel
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Modal Footer -->
+              <div style="padding: 15px 20px; background: #f5f5f5; border-top: 1px solid #dadce0; text-align: right;">
+                <button (click)="closeContactsModal()"
+                        style="background: #5f6368; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+      </div>
+
+    </div>
+

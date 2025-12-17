@@ -1,0 +1,131 @@
+.compose-section {
+    width: 500px;
+    height: 500px;
+
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+
+    z-index: 2100;
+
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+
+    display: flex;
+    flex-direction: column;
+
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #202124;
+
+    transition: width 0.3s ease, height 0.3s ease, right 0.3s ease;
+}
+
+/* Title area */
+.compose-title {
+    height: 50px;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* Inputs */
+.to-input, .subject-input {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    padding: 8px 16px;
+}
+
+.to-input p, .subject-input p {
+    margin: 0 0 4px 0;
+    font-weight: 500;
+    font-size: 14px;
+    transform: translateY(5px);
+}
+
+.to-input input, .subject-input input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+}
+
+/* Textarea */
+.compose-text-area {
+    flex-grow: 1;
+    margin: 8px 16px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: none;
+    font-family: inherit;
+}
+
+/* Bottom bar */
+.bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-top: 1px solid #e0e0e0;
+}
+
+/* Send button */
+.compose-send {
+    padding: 8px 20px;
+    background-color: #1a73e8;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.compose-send:hover {
+    background-color: #1669c1;
+}
+
+/* Attachments / Trash */
+.compose-attachments, .compose-trash {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+.compose-attachments:hover, .compose-trash:hover {
+    background-color: rgba(0,0,0,0.08);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .compose-section {
+        width: 90%;
+        height: 60%;
+        right: 5%;
+        bottom: 5%;
+    }
+
+    .compose-text-area {
+        margin: 8px 8px;
+    }
+
+    .to-input, .subject-input {
+        padding: 8px;
+    }
+}
+
+

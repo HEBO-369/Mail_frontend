@@ -1,0 +1,30 @@
+<div class="container">
+    <div class="main-content">
+
+        <h1>Sign Up</h1>
+
+        <div class="field">
+            <label for="">Enter your first name:</label>
+            <input type="text" [(ngModel)]="firstName">
+        </div>
+
+        <div class="field">
+            <label for="">Enter your second name:</label>
+            <input type="text" [(ngModel)]="lastName">
+        </div>
+
+        <div class="field">
+            <label for="">Enter your mail address:</label>
+            <input type="text" [(ngModel)]="email">
+        </div>
+
+        <div class="field">
+            <label for="">Enter your password:</label>
+            <input type="password" [(ngModel)]="password">
+        </div>
+
+        <button (click)="submit()">Sign Up</button>
+        
+    </div>
+</div>    
+

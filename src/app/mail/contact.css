@@ -1,0 +1,8 @@
+.sort-btn{
+    border-radius: 50%;
+    padding: 5px;
+}
+
+.sort-btn:hover{
+    background-color: gainsboro;
+}
