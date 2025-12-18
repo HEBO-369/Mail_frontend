@@ -57,6 +57,63 @@
     outline: none;
 }
 
+/* Subject line button */
+.subject-input button {
+    padding: 6px 12px;
+    background-color: #f1f3f4;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.subject-input button:hover {
+    background-color: #e8eaed;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Priority dropdown */
+.priority-select {
+    position: absolute;
+    margin-top: 40px; /* Positions under the button */
+    right: 24px;      /* Align with button edge */
+    width: 180px;
+
+    background: #ffffff;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+
+    z-index: 9999;
+    padding: 6px 0;
+
+    display: none;
+    animation: fadeIn 0.15s ease-out;
+}
+
+/* Priority dropdown items */
+.priority-select div {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.priority-select div:hover {
+    background-color: #f1f3f4;
+}
+
+/* Fade animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+
 /* Textarea */
 .compose-text-area {
     flex-grow: 1;

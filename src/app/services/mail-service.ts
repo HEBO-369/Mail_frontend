@@ -108,6 +108,13 @@ export class MailService {
     return this.http.post(`${this.apiURL}/draft`, composeEmailDTO);
   }
 
+  /* [BACKEND REQ] Update Existing Draft
+     Request: PUT /api/mail/draft/{draftId}
+     Body: ComposeEmailDTO (JSON) */
+  updateDraft(draftId: number, composeEmailDTO: ComposeEmailDTO): Observable<any> {
+    return this.http.put(`${this.apiURL}/draft/${draftId}`, composeEmailDTO);
+  }
+
   /* [BACKEND REQ] Mark Read
      Request: PUT /api/mail/{mailId}/read
      Body: Empty */
@@ -125,10 +132,16 @@ export class MailService {
     return this.http.put(`${this.apiURL}/${mailId}/unread`, {});
   }
 
-  /* [BACKEND REQ] Delete Mail
+  /* [BACKEND REQ] Delete Mail (Soft Delete - Move to Trash)
      Request: DELETE /api/mail/{mailId} */
   deleteMail(mailId: number): Observable<any> {
     return this.http.delete(`${this.apiURL}/${mailId}`);
+  }
+
+  /* [BACKEND REQ] Permanent Delete Mail (Hard Delete from Database)
+     Request: DELETE /api/mail/{mailId}/permanent */
+  permanentDeleteMail(mailId: number): Observable<any> {
+    return this.http.delete(`${this.apiURL}/${mailId}/permanent`);
   }
 
   /* [BACKEND REQ] Move Mail to Folder

@@ -10,31 +10,53 @@
     display: flex;
     flex-direction: column;
 
-    background-color: #fdfdfd; /* very subtle off-white */
+    background-color: #fdfdfd;
+    /* very subtle off-white */
     border-radius: 18px;
     padding: 20px;
 
     box-sizing: border-box;
     overflow: hidden;
 
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07); /* softer, floating effect */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+    /* softer, floating effect */
 }
 
 /* FILTER + SELECT BARS */
-.sent-mails > .filterbar,
-.sent-mails > .selectbar {
+.sent-mails>.filterbar,
+.sent-mails>.selectbar {
     flex-shrink: 0;
 }
 
 /* MAIL LIST */
 .mail-list {
     width: 100%;
-    margin-top: 14px;
+    margin-top: 8px;
     display: flex;
     flex-direction: column;
-    gap: 6px; /* more breathing space */
-    overflow-y: auto; /* scroll if too many mails */
-    padding-right: 4px; /* prevent scrollbar overlap */
+    gap: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 4px;
+}
+
+/* Custom scrollbar for mail list */
+.mail-list::-webkit-scrollbar {
+    width: 12px;
+}
+
+.mail-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.mail-list::-webkit-scrollbar-thumb {
+    background-color: #dadce0;
+    border-radius: 20px;
+    border: 3px solid #ffffff;
+}
+
+.mail-list::-webkit-scrollbar-thumb:hover {
+    background-color: #bdc1c6;
 }
 
 /* Single mail row */
@@ -44,35 +66,38 @@
     flex-direction: row;
     align-items: center;
 
-    padding: 10px 14px;
-    min-height: 54px;
+    padding: 0;
+    min-height: 48px;
 
     background-color: #ffffff;
-    border-radius: 14px;
-    font-size: 15px;
+    border-radius: 8px;
+    font-size: 14px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     border: 1px solid transparent;
+    margin-bottom: 2px;
 }
 
 .one-mail:hover {
-    background-color: #eef3fc; /* very soft blue */
-    border-color: #d0d7eb;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    background-color: #f8f9fa;
+    box-shadow: inset 1px 0 0 #dadce0, inset -1px 0 0 #dadce0, 0 1px 2px 0 rgba(60, 64, 67, .3), 0 1px 3px 1px rgba(60, 64, 67, .15);
+    z-index: 1;
 }
 
 /* Sender */
-.one-mail > div:first-child {
+.one-mail>div:first-child {
     font-weight: 600;
-    color: #111827; /* dark slate */
+    color: #111827;
+    /* dark slate */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 /* Subject */
-.one-mail > div:nth-child(2) {
-    color: #4b5563; /* slate gray */
+.one-mail>div:nth-child(2) {
+    color: #4b5563;
+    /* slate gray */
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
@@ -80,17 +105,19 @@
 }
 
 /* Timestamp */
-.one-mail > div:last-child {
-    color: #6b7280; /* slightly lighter gray */
+.one-mail>div:last-child {
+    color: #6b7280;
     font-size: 13px;
     font-weight: 400;
     text-align: right;
     white-space: nowrap;
 }
+
 .one-mail.selected {
-    background-color: #c2dbff !important;
-    border-color: #3b82f6;
+    background-color: #d3e3fd !important;
+    border-color: #c2dbff;
 }
+
 .mail-checkbox {
     display: flex;
     align-items: center;
@@ -110,30 +137,153 @@
     color: #1a73e8;
 }
 
-.mail-trash{
+.mail-trash {
     border-radius: 50%;
     padding: 5px;
     margin: 2px;
 }
 
-.mail-trash:hover{
+.mail-trash:hover {
     background-color: #cfd3db;
 }
 
 .one-mail-div{
     width: 100%;
     display: grid;
-    /* Checkbox | Sender | Subject | Timestamp */
-    grid-template-columns: 40px 3fr 5fr 1fr;
+    /* Checkbox | Unread | Sender | Subject | Timestamp | Read Toggle */
+    grid-template-columns: 40px 20px 220px 1fr 150px 40px;
     align-items: center;
+    gap: 12px;
 
-    padding: 14px 18px;
-    min-height: 54px;
+    padding: 12px;
+    min-height: 56px;
 
     background-color: transparent;
-    border-radius: 14px;
-    font-size: 15px;
+    font-size: 14px;
     cursor: pointer;
     transition: all 0.2s ease;
-    border: 1px solid transparent;
+}
+
+/* Ensure all direct children are vertically centered */
+.one-mail-div > * {
+    display: flex;
+    align-items: center;
+}
+
+/* Checkbox column */
+.mail-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Unread indicator column */
+.unread-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+}
+
+/* Sender column */
+.mail-sender {
+    color: #202124;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+/* Subject column */
+.mail-subject {
+    color: #5f6368;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    line-height: 1.4;
+}
+
+/* Priority column */
+.mail-priority {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.priority-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.priority-urgent {
+    background-color: #fce8e6;
+    color: #c5221f;
+}
+
+.priority-high {
+    background-color: #fef7e0;
+    color: #ea8600;
+}
+
+.priority-medium {
+    background-color: #e8f0fe;
+    color: #1967d2;
+}
+
+/* Timestamp column */
+.mail-timestamp {
+    color: #5f6368;
+    font-size: 12px;
+    text-align: right;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+/* Read toggle button column */
+.mail-read-toggle {
+    border-radius: 50%;
+    padding: 8px;
+    margin: 2px;
+    color: #5f6368;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mail-read-toggle:hover {
+    background-color: #e8eaed;
+    color: #1a73e8;
+}
+
+/* Checkbox input */
+.mail-checkbox-input {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+/* Unread dot indicator */
+.unread-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #1a73e8;
+    border-radius: 50%;
+}
+
+/* Priority dot indicator */
+.priority-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #d93025;
+    border-radius: 50%;
+    margin-right: 6px;
 }

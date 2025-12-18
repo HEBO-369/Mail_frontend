@@ -154,11 +154,13 @@
 /* === MAIL SUBJECT === */
 .mail-subject {
     width: 100%;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
 
-    font-size: 42px;
-    font-weight: 600;
-    color: #111827;
+    font-size: 22px;
+    font-weight: 400;
+    color: #202124;
+    line-height: 1.3;
 }
 
 /* === MAIL CONTENT === */
@@ -174,12 +176,13 @@
 
 /* === MAIL BODY === */
 .mail-body {
-    font-size: 20px;
-    color: #374151;
-    line-height: 1.6;
+    font-size: 14px;
+    color: #202124;
+    line-height: 1.7;
 
     margin-bottom: 24px;
     white-space: pre-wrap;
+    font-family: Arial, sans-serif;
 }
 
 /* === MAIL ATTACHMENTS === */
@@ -209,25 +212,48 @@
 .mail-reply {
     display: flex;
     justify-content: flex-start;
+    margin-top: 16px;
 }
 
 .replyBtn {
-    background-color: #3b82f6;
+    background-color: #1a73e8;
     color: #ffffff;
 
     border: none;
-    padding: 10px 30px;
+    padding: 10px 24px;
 
-    font-size: 30px;
+    font-size: 14px;
     font-weight: 500;
+    font-family: 'Google Sans', Roboto, Arial, sans-serif;
 
-    border-radius: 10px;
+    border-radius: 24px;
     cursor: pointer;
 
-    transition: background-color 0.2s ease, transform 0.15s ease;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
 }
 
 .replyBtn:hover {
-    background-color: #2563eb;
-    transform: translateY(-1px);
+    background-color: #1765cc;
+    box-shadow: 0 1px 3px 0 rgba(60,64,67,.3), 0 4px 8px 3px rgba(60,64,67,.15);
+}
+
+.replyBtn:active {
+    background-color: #1557b0;
+}
+
+/* Sender display in mail view */
+.sender-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 15px;
+    color: #5f6368;
+    font-size: 14px;
+    flex: 1;
+}
+
+.sender-display strong {
+    color: #202124;
+    font-weight: 500;
 }

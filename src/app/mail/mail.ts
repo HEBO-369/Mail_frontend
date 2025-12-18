@@ -163,23 +163,42 @@ export class Mail implements OnInit {
   //Bulk Actions
   deleteSelectedMails() {
     if (this.selectedIds().size === 0) return;
-    if (confirm(`Are you sure you want to delete ${this.selectedIds().size} mails?`)) {
-
-      // [BACKEND INTERACTION: BULK DELETE]
-      // 1. BE Task: Delete multiple emails.
-      // 2. FE Sends: List of mailIds.
-      // 3. Request: Loop DELETE /api/mail/{id} OR Single Call POST /api/mail/delete-batch [ids]
-
-      this.selectedIds().forEach(id => {
-        this.mailService.deleteMail(id).subscribe();
-      });
-
-
-      // Frontend Update
-      this.mails.update(currentMails =>
-        currentMails.filter(m => !this.selectedIds().has(m.id))
+    
+    const currentFolder = this.currentFolder();
+    const isInTrash = currentFolder === 'trash';
+    const count = this.selectedIds().size;
+    
+    const confirmMessage = isInTrash
+      ? `Permanently delete ${count} email(s)? This cannot be undone!`
+      : `Move ${count} email(s) to trash?`;
+    
+    if (confirm(confirmMessage)) {
+      // Choose delete method based on current folder
+      const deleteMethod = isInTrash
+        ? (id: number) => this.mailService.permanentDeleteMail(id)
+        : (id: number) => this.mailService.deleteMail(id);
+      
+      // Create delete requests for all selected emails
+      const deleteRequests = Array.from(this.selectedIds()).map(id => 
+        deleteMethod(id)
       );
-      this.selectedIds.set(new Set());
+      
+      // Execute all delete requests in parallel
+      forkJoin(deleteRequests).subscribe({
+        next: () => {
+          // Frontend Update
+          this.mails.update(currentMails =>
+            currentMails.filter(m => !this.selectedIds().has(m.id))
+          );
+          this.selectedIds.set(new Set());
+          this.refresh();
+        },
+        error: (error) => {
+          console.error('Error deleting emails:', error);
+          alert('Failed to delete emails. Please try again.');
+          this.refresh();
+        }
+      });
     }
   }
 
@@ -191,72 +210,94 @@ export class Mail implements OnInit {
     const email = this.currentUser()?.email;
     if (!email) return;
 
-    // [BACKEND INTERACTION: GET FOLDERS]
-    // Request: GET /api/mail/folders/{email}
-    // Response: ["Work", "Personal", "Travel"]
-    /*
+    // Load folders from backend
     this.mailService.getUserFolders(email).subscribe({
-      next: (folders) => this.userFolders.set(folders),
-      error: (err) => console.log('Error', err)
+      next: (folders) => this.userFolders.set(folders || []),
+      error: (err) => {
+        console.error('Error loading folders:', err);
+        this.userFolders.set([]);
+      }
     });
-    */
-
-    //Frontend Simulation
-    setTimeout(() => {
-      this.userFolders.set(['Work', 'Personal', 'Projects']);
-    }, 100);
   }
 
-  //Create new folder (Simulated)
+  //Create new folder
   addUserFolder() {
     const name = prompt("Enter folder name:");
 
     if (name && name.trim()) {
       const email = this.currentUser()?.email;
 
-      // [BACKEND INTERACTION: CREATE FOLDER]
-      // Request: POST /api/mail/folders/{email}?folderName=xyz
-      /*
       if(email) {
         this.mailService.createFolder(email, name).subscribe({
-            next: () => this.loadUserFolders(), // Refresh from DB
-            error: () => alert("Failed")
+          next: () => {
+            this.loadUserFolders();
+            alert(`Folder "${name}" created!`);
+          },
+          error: (err) => {
+            console.error('Error creating folder:', err);
+            alert('Failed to create folder.');
+          }
         });
       }
-      */
-      this.userFolders.update(list => [...list, name]);
     }
   }
 
-  //Delete folder (Simulated)
+  //Delete folder
   deleteUserFolder(event: Event, folderName: string) {
     event.stopPropagation();
 
-    if (confirm(`Delete "${folderName}"?`)) {
+    if (confirm(`Delete "${folderName}" and all its emails?`)) {
       const email = this.currentUser()?.email;
 
-      // [BACKEND INTERACTION: DELETE FOLDER]
-      // Request: DELETE /api/mail/folders/{email}?folderName=xyz
-      /*
       if(email) {
         this.mailService.deleteFolder(email, folderName).subscribe({
-            next: () => {
-                this.loadUserFolders();
-                if(this.currentFolder() === folderName) this.loadInbox();
-            },
-            error: () => alert("Failed")
+          next: () => {
+            this.loadUserFolders();
+            if(this.currentFolder() === folderName) {
+              this.loadInbox();
+            }
+            alert(`Folder "${folderName}" deleted!`);
+          },
+          error: (err) => {
+            console.error('Error deleting folder:', err);
+            alert('Failed to delete folder.');
+          }
         });
-      }
-      */
-
-      this.userFolders.update(list => list.filter(f => f !== folderName));
-      if (this.currentFolder() === folderName) {
-        this.loadInbox();
       }
     }
   }
 
-  //Rename Folder Logic
+  // Delete single mail from mail view
+  deleteSingleMail(mailId: number | undefined) {
+    if (!mailId) return;
+    
+    const currentFolder = this.currentFolder();
+    const isInTrash = currentFolder === 'trash';
+    
+    const confirmMessage = isInTrash 
+      ? 'Permanently delete this email? This cannot be undone!'
+      : 'Move this email to trash?';
+    
+    if (confirm(confirmMessage)) {
+      const deleteObservable = isInTrash
+        ? this.mailService.permanentDeleteMail(mailId)
+        : this.mailService.deleteMail(mailId);
+      
+      deleteObservable.subscribe({
+        next: () => {
+          this.mails.update(currentMails => currentMails.filter(m => m.id !== mailId));
+          this.clearselectedMail();
+          this.refresh();
+        },
+        error: (error) => {
+          console.error('Error deleting mail:', error);
+          alert('Failed to delete email. Please try again.');
+        }
+      });
+    }
+  }
+
+  //Rename Folder
   renameUserFolder(event: Event, oldName: string) {
     event.stopPropagation();
 
@@ -264,29 +305,20 @@ export class Mail implements OnInit {
     if (newName && newName.trim() && newName !== oldName) {
       const email = this.currentUser()?.email;
 
-      // [BACKEND INTERACTION: RENAME FOLDER]
-      // Request: PUT /api/mail/folders/{email}?oldName=x&newName=y
-      /*
       if (email) {
         this.mailService.renameFolder(email, oldName, newName).subscribe({
-            next: () => {
-                this.loadUserFolders(); // Refresh list
-                // Update current view if we are inside this folder
-                if(this.currentFolder() === oldName) this.loadFolder(newName);
-            },
-            error: () => alert("Failed to rename")
+          next: () => {
+            this.loadUserFolders();
+            if(this.currentFolder() === oldName) {
+              this.loadFolder(newName);
+            }
+            alert(`Folder renamed to "${newName}"!`);
+          },
+          error: (err) => {
+            console.error('Error renaming folder:', err);
+            alert('Failed to rename folder.');
+          }
         });
-      }
-      */
-
-      // Frontend Simulation
-      this.userFolders.update(list =>
-        list.map(f => f === oldName ? newName : f)
-      );
-
-      // If we are currently inside the renamed folder, update the view header
-      if (this.currentFolder() === oldName) {
-        this.currentFolder.set(newName);
       }
     }
   }
@@ -305,24 +337,51 @@ export class Mail implements OnInit {
     if (!folderName || this.selectedIds().size === 0) return;
 
     const selectedMailIds = Array.from(this.selectedIds());
+    const currentFolder = this.currentFolder();
+    const isMovingFromTrash = currentFolder === 'trash';
 
-    if (confirm(`Copy ${selectedMailIds.length} email(s) to "${folderName}"?`)) {
-      // Call backend API to copy each selected email to the folder
-      const copyRequests = selectedMailIds.map(mailId =>
-        this.mailService.copyEmailToFolder(mailId, folderName)
+    if (confirm(`Move ${selectedMailIds.length} email(s) to "${folderName}"?`)) {
+      // Step 1: Call backend API to copy each selected email to the destination folder
+      const moveRequests = selectedMailIds.map(mailId =>
+        this.mailService.moveMailToFolder(mailId, folderName)
       );
 
-      // Execute all copy requests in parallel
-      forkJoin(copyRequests).subscribe({
+      // Execute all move (copy) requests in parallel
+      forkJoin(moveRequests).subscribe({
         next: () => {
-          alert(`Successfully copied ${selectedMailIds.length} email(s) to "${folderName}"`);
-          // Optionally refresh the current folder view
-          this.refresh();
-          this.selectedIds.set(new Set());
+          // Step 2: After successful copy, delete from source folder
+          // If moving from trash, use permanent delete; otherwise use soft delete
+          const deleteRequests = selectedMailIds.map(mailId =>
+            isMovingFromTrash 
+              ? this.mailService.permanentDeleteMail(mailId)
+              : this.mailService.deleteMail(mailId)
+          );
+
+          // Execute all delete requests in parallel
+          forkJoin(deleteRequests).subscribe({
+            next: () => {
+              alert(`Successfully moved ${selectedMailIds.length} email(s) to "${folderName}"`);
+              
+              // Remove moved emails from current view
+              this.mails.update(currentMails =>
+                currentMails.filter(m => !selectedMailIds.includes(m.id))
+              );
+              
+              this.selectedIds.set(new Set());
+              
+              // Refresh to ensure sync with backend
+              this.refresh();
+            },
+            error: (error) => {
+              console.error('Error deleting emails from source:', error);
+              alert(`Emails copied to "${folderName}" but failed to remove from current folder. Please refresh.`);
+              this.refresh();
+            }
+          });
         },
         error: (error) => {
-          console.error('Error copying emails:', error);
-          alert(`Failed to copy emails to "${folderName}". Please try again.`);
+          console.error('Error moving emails:', error);
+          alert(`Failed to move emails to "${folderName}". Please try again.`);
         }
       });
     }
@@ -331,7 +390,38 @@ export class Mail implements OnInit {
   // Toggle Priority Mode
   togglePriorityMode() {
     this.isPriorityMode.update(value => !value);
-    this.loadInbox();
+    this.loadPrioritySorting();
+  }
+
+  loadPrioritySorting() {
+    const email = this.currentUser()?.email;
+    if (email == undefined) {
+      return;
+    }
+
+    // Validation: Don't send request if mails list is empty
+    const currentMails = this.mails();
+    if (!currentMails || currentMails.length === 0) {
+      console.log('No mails to sort. Skipping priority sorting request.');
+      this.isLoading.set(false);
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    this.mailService.loadSortedMails(email, "priority", this.isPriorityMode()).subscribe({
+      next: (mails) => {
+        this.mails.set(mails || []);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading priority sorted mails:', error);
+        this.errorMessage.set('Failed to load priority sorted emails');
+        this.mails.set([]);
+        this.isLoading.set(false);
+      }
+    });
   }
 
   // Load inbox mails
@@ -348,14 +438,16 @@ export class Mail implements OnInit {
     this.mailService.getInboxMails(userEmail).subscribe({
       next: (mails) => {
         console.log('=== LOADED MAILS ===');
-        console.log('Mail IDs:', mails.map(m => m.id));
-        console.log('Full mails:', mails);
-        this.mails.set(mails);
+        const safeMails = mails || [];
+        console.log('Mail IDs:', safeMails.map(m => m.id));
+        console.log('Full mails:', safeMails);
+        this.mails.set(safeMails);
         this.isLoading.set(false);
       },
       error: (error) => {
         console.error('Error loading inbox:', error);
         this.errorMessage.set('Failed to load inbox');
+        this.mails.set([]);
         this.isLoading.set(false);
       }
     });
@@ -371,11 +463,13 @@ export class Mail implements OnInit {
 
     this.mailService.getSentMails(userEmail).subscribe({
       next: (mails) => {
-        this.mails.set(mails);
+        this.mails.set(mails || []);
         this.isLoading.set(false);
       },
       error: (error) => {
         console.error('Error loading sent mails:', error);
+        this.errorMessage.set('Failed to load sent emails');
+        this.mails.set([]);
         this.isLoading.set(false);
       }
     });
@@ -393,11 +487,61 @@ export class Mail implements OnInit {
     // Request: GET /api/mail/drafts/{email}
     this.mailService.getDraftMails(userEmail).subscribe({
       next: (mails) => {
-        this.mails.set(mails);
+        this.mails.set(mails || []);
         this.isLoading.set(false);
       },
       error: (error) => {
         console.error('Error loading drafts:', error);
+        this.errorMessage.set('Failed to load drafts');
+        this.mails.set([]);
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  // Load trash mails
+  loadTrash() {
+    const userEmail = this.currentUser()?.email;
+    if (!userEmail) return;
+
+    this.currentFolder.set('trash');
+    this.isLoading.set(true);
+
+    // [BACKEND INTERACTION: GET TRASH]
+    // Request: GET /api/mail/folder/{email}/trash
+    this.mailService.getMailsByFolder(userEmail, 'trash').subscribe({
+      next: (mails) => {
+        this.mails.set(mails || []);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading trash:', error);
+        this.errorMessage.set('Failed to load trash');
+        this.mails.set([]);
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  // Load spam mails
+  loadSpam() {
+    const userEmail = this.currentUser()?.email;
+    if (!userEmail) return;
+
+    this.currentFolder.set('spam');
+    this.isLoading.set(true);
+
+    // [BACKEND INTERACTION: GET SPAM]
+    // Request: GET /api/mail/folder/{email}/spam
+    this.mailService.getMailsByFolder(userEmail, 'spam').subscribe({
+      next: (mails) => {
+        this.mails.set(mails || []);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading spam:', error);
+        this.errorMessage.set('Failed to load spam');
+        this.mails.set([]);
         this.isLoading.set(false);
       }
     });
@@ -415,11 +559,13 @@ export class Mail implements OnInit {
     // Request: GET /api/mail/folder/{email}/{folderName}
     this.mailService.getMailsByFolder(userEmail, folderName).subscribe({
       next: (mails) => {
-        this.mails.set(mails);
+        this.mails.set(mails || []);
         this.isLoading.set(false);
       },
       error: (error) => {
         console.error(`Error loading ${folderName}:`, error);
+        this.errorMessage.set(`Failed to load ${folderName}`);
+        this.mails.set([]);
         this.isLoading.set(false);
       }
     });
@@ -431,25 +577,9 @@ export class Mail implements OnInit {
     if (folder === 'inbox') this.loadInbox();
     else if (folder === 'sent') this.loadSent();
     else if (folder === 'drafts') this.loadDrafts();
+    else if (folder === 'trash') this.loadTrash();
+    else if (folder === 'spam') this.loadSpam();
     else this.loadFolder(folder);
-  }
-
-  //compose email
-  isComposing = false;
-  compseToggle() {
-    this.isComposing = !this.isComposing;
-    // Always load contacts when opening compose (for autocomplete)
-    if (this.isComposing) {
-      this.loadContacts();
-    }
-  }
-
-  composedMail: ComposeEmailDTO = {
-    sender: this.currentUser()?.email,
-    receivers: [''],
-    subject: '',
-    body: '',
-    priority: 1
   }
 
   // Attachment handling
@@ -497,9 +627,10 @@ export class Mail implements OnInit {
   onReceiverInput(event: Event) {
     const input = event.target as HTMLInputElement;
     this.receiverInputValue.set(input.value);
-    this.composedMail.receivers[0] = input.value;}
+    this.composedMail.receivers[0] = input.value;
+  }
 
-  printSuggestions(){
+  printSuggestions() {
     console.log(this.filteredContactSuggestions);
   }
 
@@ -540,6 +671,54 @@ export class Mail implements OnInit {
     }
   }
 
+  //compose email
+  isComposing = false;
+  compseToggle() {
+    this.isComposing = !this.isComposing;
+    // Always load contacts when opening compose (for autocomplete)
+    if (this.isComposing) {
+      this.loadContacts();
+    }
+  }
+
+  isPrioritySelected = signal<boolean>(false)
+
+  setPriortyMenu() {
+    this.isPrioritySelected.set(!this.isPrioritySelected())
+  }
+
+  selectedPriority = signal<number>(1)
+
+  displayPriority() {
+    switch (this.selectedPriority()) {
+      case 1: return "⚪"
+      case 2: return "🟢"
+      case 3: return "🔵"
+      case 4: return "🟠"
+      case 5: return "🔴"
+      default: return "⚪"
+    }
+  }
+
+  composedMail: ComposeEmailDTO = {
+    sender: this.currentUser()?.email,
+    receivers: [''],
+    subject: '',
+    body: '',
+    priority: this.selectedPriority()
+  }
+
+  // Track editing draft ID (null = new draft, number = editing existing)
+  editingDraftId = signal<number | null>(null);
+  isEditingDraft = computed(() => this.editingDraftId() !== null);
+
+
+  choosePriority(level: number) {
+    this.selectedPriority.set(level);
+    this.composedMail.priority = level;
+    this.isPrioritySelected.set(false);
+  }
+
   // Close suggestions when clicking outside the suggestions list/input
   onComposeAreaClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
@@ -550,12 +729,38 @@ export class Mail implements OnInit {
   }
 
   sendComposedMail() {
-    if (this.composedMail.receivers.length === 0) {
-      alert('Please enter at least one recipient');
+    // Parse receivers - split by comma and clean up
+    const receiverInput = this.composedMail.receivers[0] || '';
+    const receiverEmails = receiverInput
+      .split(',')
+      .map(email => email.trim())
+      .filter(email => email.length > 0);
+
+    if (receiverEmails.length === 0) {
+      alert('Please enter at least one recipient email');
       return;
     }
 
+    // Email validation regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Validate all emails
+    const invalidEmails = receiverEmails.filter(email => !emailRegex.test(email));
+
+    if (invalidEmails.length > 0) {
+      alert(`Invalid email address(es):\n${invalidEmails.join('\n')}\n\nPlease correct and try again.`);
+      return;
+    }
+
+    // Update receivers array with validated emails
+    this.composedMail.receivers = receiverEmails;
+
     const formData = new FormData();
+    // Ensure sender is set
+    if (!this.composedMail.sender) {
+      this.composedMail.sender = this.currentUser()?.email;
+    }
+
     const emailData = {
       sender: this.composedMail.sender,
       receivers: this.composedMail.receivers,
@@ -570,36 +775,43 @@ export class Mail implements OnInit {
       formData.append('attachments', file, file.name);
     });
 
-    console.log(this.composedMail.sender)
-    console.log(this.composedMail.receivers)
-    console.log(this.composedMail.subject)
-    console.log(this.composedMail.body)
-    console.log(this.composedMail.priority)
+    console.log('Sending to:', this.composedMail.receivers);
+    console.log('Subject:', this.composedMail.subject);
+    console.log('Priority:', this.composedMail.priority);
+
     if (this.composedMail.receivers.length > 0) {
+      const currentDraftId = this.editingDraftId(); // Store before reset
+
       this.mailService.sendMailWithAttachments(formData).subscribe({
         next: res => {
-          console.log(res.message)
+          console.log(res.message);
+          
+          // If we were editing a draft, delete it after sending
+          if (currentDraftId) {
+            this.mailService.permanentDeleteMail(currentDraftId).subscribe({
+              next: () => console.log('Draft deleted after sending'),
+              error: (e) => console.error('Error deleting draft:', e)
+            });
+          }
+
           setTimeout(() => {
-            alert('Email sent successfully!');
+            alert(`Email sent successfully to ${this.composedMail.receivers.length} recipient(s)!`);
             this.refresh();
             this.resetComposeForm();
           }, 500);
-          this.refresh()
+          this.refresh();
         },
         error: e => {
           if (e.error && e.error.error) {
             console.log(`Error: ${e.error.error}`);
+            alert(`Failed to send email: ${e.error.error}`);
           }
           else {
             console.log('Unknown error', e);
+            alert('Failed to send email. Please try again.');
           }
         }
       });
-      this.composedMail.receivers = []
-      this.composedMail.subject = ''
-      this.composedMail.body = ''
-      this.composedMail.priority = 1
-      console.log("Email is sent")
     }
 
     // [BACKEND INTERACTION: SEND MAIL WITH ATTACHMENTS]
@@ -622,6 +834,7 @@ export class Mail implements OnInit {
     this.composedMail.priority = 1;
     this.selectedAttachments.set([]);
     this.isComposing = false;
+    this.editingDraftId.set(null); // Clear draft ID
   }
 
   /**
@@ -629,38 +842,57 @@ export class Mail implements OnInit {
    * Called when user clicks X button before sending
    */
   saveDraftAndClose() {
-    // Check if there's any content to save
-
-    // this checks if there is at least one non-empty receiver
-    // to avoid saving drafts with only empty receivers
     const hasValidReceiver = this.composedMail.receivers.some(r => r.trim() !== '');
     const hasContent = this.composedMail.subject.trim() !== '' ||
       this.composedMail.body.trim() !== '' ||
       hasValidReceiver;
 
     if (!hasContent) {
-      // Nothing to save, just close
       this.isComposing = false;
+      this.editingDraftId.set(null);
       return;
     }
 
-    // Save as draft
-    this.mailService.draftEmail(this.composedMail).subscribe({
-      next: (res) => {
-        console.log('Email saved as draft:', res.message);
-        alert('Email saved to drafts');
-        this.resetComposeForm();
-        this.refresh(); // Refresh to show new draft
-      },
-      error: (e) => {
-        console.error('Error saving draft:', e);
-        // Still close the window even if save fails
-        const confirmClose = confirm('Failed to save draft. Close anyway?');
-        if (confirmClose) {
+    const currentDraftId = this.editingDraftId();
+
+    // Ensure sender is set
+    if (!this.composedMail.sender) {
+      this.composedMail.sender = this.currentUser()?.email;
+    }
+
+    if (currentDraftId) {
+      // UPDATE existing draft
+      this.mailService.updateDraft(currentDraftId, this.composedMail).subscribe({
+        next: () => {
+          alert('Draft updated');
           this.resetComposeForm();
+          this.refresh();
+        },
+        error: (e) => {
+          console.error('Error updating draft:', e);
+          const confirmClose = confirm('Failed to update draft. Close anyway?');
+          if (confirmClose) {
+            this.resetComposeForm();
+          }
         }
-      }
-    });
+      });
+    } else {
+      // CREATE new draft
+      this.mailService.draftEmail(this.composedMail).subscribe({
+        next: (res) => {
+          alert('Draft saved');
+          this.resetComposeForm();
+          this.refresh();
+        },
+        error: (e) => {
+          console.error('Error saving draft:', e);
+          const confirmClose = confirm('Failed to save draft. Close anyway?');
+          if (confirmClose) {
+            this.resetComposeForm();
+          }
+        }
+      });
+    }
   }
 
   //mail preview
@@ -687,8 +919,8 @@ export class Mail implements OnInit {
     // Use the stored filename if available, otherwise fall back to ID
     if (attachment.fileName || attachment.id) {
       // Construct download URL using the backend endpoint
-      const downloadUrl = `https://mailbackend-production-b0cd.up.railway.app/api/mail/attachments/id/${attachment.id}`;
-      
+      const downloadUrl = `http://localhost:8080/api/mail/attachments/id/${attachment.id}`;
+
       // Open in new tab - backend will handle inline display or download based on content type
       window.open(downloadUrl, '_blank');
     } else {
@@ -1044,31 +1276,91 @@ export class Mail implements OnInit {
    * @param mail - The draft email to edit
    */
   openDraftInCompose(mail: MailEntity) {
+    // Track that we're editing this draft
+    this.editingDraftId.set(mail.id!);
+
     // Populate compose form with draft data
     this.composedMail.receivers = [mail.receiver || ''];
     this.composedMail.subject = mail.subject || '';
     this.composedMail.body = mail.body || '';
     this.composedMail.priority = mail.priority || 1;
 
-    // Note: Attachments would need to be handled separately if stored
-    // For now, we'll start with empty attachments
+    // Handle attachments if any (empty for now)
     this.selectedAttachments.set([]);
 
     // Open compose window
     this.isComposing = true;
-
-    // TODO: Optionally delete the draft from backend after opening
-    // so it doesn't duplicate when user saves/sends
   }
 
   // Save as Draft
   saveDraft() {
-    console.log('💾 Saving Draft:', this.composedMail);
-    alert('Draft saved successfully!');
+    // Ensure sender is set
+    if (!this.composedMail.sender) {
+      this.composedMail.sender = this.currentUser()?.email;
+    }
+
+    const hasValidReceiver = this.composedMail.receivers.some(r => r.trim() !== '');
+    const hasContent = this.composedMail.subject.trim() !== '' ||
+      this.composedMail.body.trim() !== '' ||
+      hasValidReceiver;
+
+    if (!hasContent) {
+      alert('Please add some content before saving draft');
+      return;
+    }
+
+    const currentDraftId = this.editingDraftId();
+
+    if (currentDraftId) {
+      // UPDATE existing draft
+      this.mailService.updateDraft(currentDraftId, this.composedMail).subscribe({
+        next: () => {
+          alert('Draft updated successfully!');
+          this.refresh();
+        },
+        error: (e) => {
+          console.error('Error updating draft:', e);
+          alert('Failed to update draft');
+        }
+      });
+    } else {
+      // CREATE new draft
+      this.mailService.draftEmail(this.composedMail).subscribe({
+        next: (res) => {
+          console.log('Draft saved:', res);
+          alert('Draft saved successfully!');
+          // Track the new draft ID
+          if (res.draftId) {
+            this.editingDraftId.set(res.draftId);
+          }
+          this.refresh();
+        },
+        error: (e) => {
+          console.error('Error saving draft:', e);
+          alert('Failed to save draft');
+        }
+      });
+    }
+  }
+
+  // Cancel compose without saving
+  cancelCompose() {
+    const hasContent = this.composedMail.subject.trim() !== '' ||
+      this.composedMail.body.trim() !== '' ||
+      this.composedMail.receivers.some(r => r.trim() !== '');
+
+    if (hasContent) {
+      const confirmDiscard = confirm('Discard this message without saving?');
+      if (!confirmDiscard) {
+        return;
+      }
+    }
+
+    // Just close and reset, don't save
     this.resetComposeForm();
   }
 
-  trash(mail: MailEntity | null){
+  trash(mail: MailEntity | null) {
     if (mail == null) {
       return
     }
@@ -1093,28 +1385,28 @@ export class Mail implements OnInit {
 
   sortOrder = signal<boolean>(false)
 
-  showSortMenu(){
+  showSortMenu() {
     if (this.currentFolder() == 'inbox') {
       this.sortMenu.set(!this.sortMenu())
     }
   }
 
-  toggleSortOrder(){
+  toggleSortOrder() {
     this.sortOrder.set(!this.sortOrder())
     this.loadSortedMails()
   }
 
-  setSortCriteria(criteria: string){
+  setSortCriteria(criteria: string) {
     this.sortCriteria.set(criteria);
     this.loadSortedMails()
   }
 
-  loadSortedMails(){
+  loadSortedMails() {
     const email = this.currentUser()?.email;
-    if(email == undefined){
+    if (email == undefined) {
       return
     }
-    this.mailService.loadSortedMails(email , this.sortCriteria(), this.sortOrder()).subscribe({
+    this.mailService.loadSortedMails(email, this.sortCriteria(), this.sortOrder()).subscribe({
       next: (mails) => {
         this.mails.set(mails);
         this.isLoading.set(false);
@@ -1126,6 +1418,4 @@ export class Mail implements OnInit {
       }
     });
   }
-
-
 }

@@ -110,13 +110,9 @@
         <button class="composeBtn" (click)="compseToggle()">Compose</button>
         <ul class="features">
             <li (click)="loadInbox()" [class.active]="currentFolder() === 'inbox'">Inbox</li>
-            <li (click)="loadFolder('starred')" [class.active]="currentFolder() === 'starred'">Starred</li>
             <li (click)="loadSent()" [class.active]="currentFolder() === 'sent'">Sent</li>
             <li (click)="loadDrafts()" [class.active]="currentFolder() === 'drafts'">Drafts</li>
-            <li (click)="loadFolder('important')" [class.active]="currentFolder() === 'important'">Important</li>
-            <li (click)="loadFolder('scheduled')" [class.active]="currentFolder() === 'scheduled'">Scheduled</li>
             <li (click)="loadFolder('all')" [class.active]="currentFolder() === 'all'">All Mail</li>
-            <li (click)="loadFolder('spam')" [class.active]="currentFolder() === 'spam'">Spam</li>
             <li (click)="loadFolder('trash')" [class.active]="currentFolder() === 'trash'">Trash</li>
             <hr style="border: 0; border-top: 1px solid #ccc; margin: 15px 0;">
             <div
@@ -191,6 +187,15 @@
         <div class="subject-input">
           <p>Subject:</p>
           <input type="text" [(ngModel)]="composedMail.subject" (click)="printSuggestions()">
+          <div style="position: relative; top: 5px;">{{ displayPriority() }}</div>
+          <button (click)="setPriortyMenu()">Priority</button>
+          <div class="priority-select" [style.display]="isPrioritySelected()? 'block': 'none'">
+            <div (click)="choosePriority(1)">⚪ Normal</div>
+            <div (click)="choosePriority(2)">🟢 Important</div>
+            <div (click)="choosePriority(3)">🔵 Very Important</div>
+            <div (click)="choosePriority(4)">🟠 Urgent</div>
+            <div (click)="choosePriority(5)">🔴 Extremely Urgent</div>
+          </div>
         </div>
         <textarea class="compose-text-area" [(ngModel)]="composedMail.body"></textarea>
 
@@ -236,8 +241,8 @@
           <div class="compose-attachments" (click)="fileInput.click()" style="cursor: pointer;" title="Attach files">
             <img src="icons/attach.svg" alt="attach">
           </div>
-          <div class="compose-trash">
-            <img src="icons/trash.svg" alt="attach">
+          <div class="compose-trash" (click)="cancelCompose()" title="Discard and close">
+            <img src="icons/trash.svg" alt="discard">
           </div>
         </div>
       </div>
@@ -252,21 +257,24 @@
                   <img src="icons/returnarrow.svg" alt="">
                 </div>
 
-                <div class="trash-mail">
+                <div class="trash-mail" (click)="deleteSingleMail(selectedMail()?.id)" title="Move to trash">
                   <img src="icons/trash.svg" alt="">
                 </div>
+              </div>
+
+              <!-- Display sender/receiver based on folder -->
+              <div class="sender-display">
+                @if(currentFolder() === 'sent') {
+                  <strong>To:</strong> {{ selectedMail()?.receiver }}
+                } @else {
+                  <strong>From:</strong> {{ selectedMail()?.sender }}
+                }
               </div>
 
               <div class="utility-right">
                 <div class="page-display">
                   {{pageFrom()}}-{{pageTo()}} of {{mails().length}}
                 </div>
-                <button class="page-left" (click)="pagingLeft()">
-                  <img src="icons/arrowback.svg" alt="Page Left">
-                </button>
-                <button class="page-right" (click)="pagingRight()">
-                  <img src="icons/arrowforward.svg" alt="Page Right">
-                </button>
               </div>
 
             </div>
@@ -418,18 +426,20 @@
 
                     <div class="one-mail-div" (click)="currentFolder() === 'drafts' ? openDraftInCompose(mails()[i]) : setselectedMail(mails()[i])">
     
+    <!-- Checkbox -->
     <div class="mail-checkbox" (click)="toggleSelection($event, mails()[i].id)">
-    <input type="checkbox" [checked]="isSelected(mails()[i].id)"
-            style="cursor: pointer; width: 18px; height: 18px;">
+      <input type="checkbox" [checked]="isSelected(mails()[i].id)" class="mail-checkbox-input">
     </div>
 
-    @if(!mails()[i].isRead) {
-    <span
-        style="display: inline-block; width: 8px; height: 8px; background-color: #1a73e8; border-radius: 50%; margin-right: 4px;"
-        title="Unread"></span>
-    }
+    <!-- Unread Indicator -->
+    <div class="unread-indicator">
+      @if(!mails()[i].isRead) {
+        <span class="unread-dot" title="Unread"></span>
+      }
+    </div>
 
-    <div [style.font-weight]="mails()[i].isRead ? '400' : '600'">
+    <!-- Sender/Receiver -->
+    <div class="mail-sender" [style.font-weight]="mails()[i].isRead ? '400' : '600'">
         @if(currentFolder() == "sent"){
             To: {{mails()[i].receiver}}
         }
@@ -437,55 +447,40 @@
             {{mails()[i].sender}}
         }
     </div>
+
+    <!-- Subject with Priority Indicator -->
+    <div class="mail-subject" [style.font-weight]="mails()[i].isRead ? '400' : '600'">
+      @if(mails()[i].priority === 5) {
+        <span class="priority-dot" title="High Priority"></span>
+      }
+      {{mails()[i].subject}}
+    </div>
+
+    <!-- Timestamp -->
+    <div class="mail-timestamp" [style.font-weight]="mails()[i].isRead ? '400' : '500'">
+      {{mails()[i].timestamp | date:'dd-MM-yy h:mm a'}}
+    </div>
+
+
+    <!-- Mark as read/unread button -->
+    <div
+      class="mail-read-toggle"
+      (click)="toggleReadStatus($event, mails()[i])"
+      [title]="mails()[i].isRead ? 'Mark as unread' : 'Mark as read'">
+      @if(mails()[i].isRead) {
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+          <line x1="3" y1="3" x2="21" y2="21" stroke-width="2"></line>
+        </svg>
+      } @else {
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      }
+    </div>
 </div>
-                        
-
-                        <div style="display: flex; align-items: center; gap: 6px;" [style.font-weight]="mails()[i].isRead ? '400' : '600'">
-                        <!-- High Priority Indicator (Red Dot for priority = 1) -->
-                          @if(mails()[i].priority === 5) {
-                            <span
-                              style="display: inline-block; width: 8px; height: 8px; background-color: #d93025; border-radius: 50%;"
-                              title="High Priority"></span>
-                          }
-                          {{mails()[i].subject}}
-                        </div>
-
-                        <div [style.font-weight]="mails()[i].isRead ? '400' : '600'">{{mails()[i].timestamp | date:'dd-MM-yy h:mm a'}}
-                      </div>
-
-                      <!-- Mark as read/unread button -->
-
-                      <div
-                        class="mail-read-toggle"
-                        (click)="toggleReadStatus($event, mails()[i])"
-                        [title]="mails()[i].isRead ? 'Mark as unread' : 'Mark as read'"
-                        style="cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center;">
-                        @if(mails()[i].isRead) {
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <line x1="3" y1="3" x2="21" y2="21" stroke-width="2"></line>
-                          </svg>
-                        } @else {
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                          </svg>
-                        }
-                      </div>
-                  <div>{{mails()[i].sender}}</div>
-
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <!-- High Priority Indicator (Red Dot for priority = 1) -->
-                    @if(mails()[i].priority === 1) {
-                      <span
-                        style="display: inline-block; width: 8px; height: 8px; background-color: #d93025; border-radius: 50%;"
-                        title="High Priority"></span>
-                    }
-                    {{mails()[i].subject}}
-                  </div>
-
-                  <div>{{mails()[i].timestamp | date:'dd-MM-yy h:mm a'}}</div>
                 </div>
               }
             }
